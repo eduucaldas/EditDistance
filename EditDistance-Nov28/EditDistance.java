@@ -30,26 +30,43 @@ public class EditDistance implements EditDistanceInterface {
         		dist[i][j] = new_d(dist, i, j, s1, s2);
         	}
         }
-        
-        
         return dist;
     }
 
     public List<String> getMinimalEditSequence(String s1, String s2) {
-        /* To be completed in Part 2. Remove sample code block below. */
         LinkedList<String> ls = new LinkedList<> ();
-        if (c_r == 6) {
-            ls.add("delete(1)");
-            ls.add("delete(1)");
-            ls.add("insert(2,c)");
-            ls.add("insert(3,b)");
+        int dist[][] = getEditDistanceDP(s1, s2);
+        int i = s1.length(), j = s2.length();
+        while(i>0 && j>0) {
+        	if(dist[i][j] == dist[i-1][j-1]) {
+        		i--;
+        		j--;
+        	}
+        	else if(dist[i][j] == dist[i-1][j-1] + c_r) {
+        		ls.addFirst("replace(" + (i-1) + "," + s2.charAt(j-1) + ")");
+        		i--;
+        		j--;
+        	}
+        	else if(dist[i][j] == dist[i][j-1] + c_i) {
+        		ls.addFirst("insert(" + (i-1) + "," + s2.charAt(j-1) + ")");
+        		j--;
+        	}
+        	else if(dist[i][j] == dist[i-1][j] + c_d) {
+        		ls.addFirst("delete(" + (i-1) + ")");
+        		i--;
+        	}
+        	else
+        		System.out.println("Error");
         }
-        else {
-            ls.add("replace(1,d)");
-            ls.add("replace(3,b)");
+        while(j > 0) {
+        	ls.addFirst("insert(" + (i-1) + "," + s2.charAt(j-1) + ")");
+    		j--;
+        }
+        while(i>0) {
+        	ls.addFirst("delete(" + (i-1) + ")");
+    		i--;
         }
         return ls;
-        /* Code block to be removed ends. */
     }
     
     private int[][] newDist(int m, int n){
@@ -77,6 +94,49 @@ public class EditDistance implements EditDistanceInterface {
     	}
     }
     
+    public static void display(List<String> ls) {
+    	for(String op: ls) {
+    		System.out.println(op);
+    	}
+    }
+    /*
+    public void stepByStepSolution(final String s1, final String s2) {
+    	final char[] start = s1.toCharArray();
+    	final char[] end = s2.toCharArray();
+    	System.out.println(start);
+        final int dist[][] = getEditDistanceDP(s1, s2);
+        int i = start.length, j = end.length;
+        while(i>0 && j>0) {
+        	if(dist[i][j] == dist[i-1][j-1]) {
+        		i--;
+        		j--;
+        	}
+        	else if(dist[i][j] == dist[i-1][j-1] + c_r) {
+        		
+        		ls.addFirst("replace(" + (i-1) + "," + s2.charAt(j-1) + ")");
+        		i--;
+        		j--;
+        	}
+        	else if(dist[i][j] == dist[i][j-1] + c_i) {
+        		ls.addFirst("insert(" + (i-1) + "," + s2.charAt(j-1) + ")");
+        		j--;
+        	}
+        	else if(dist[i][j] == dist[i-1][j] + c_d) {
+        		ls.addFirst("delete(" + (i-1) + ")");
+        		i--;
+        	}
+        	else
+        		System.out.println("Error");
+        }
+        while(i == 0) {}
+        	
+    	
+    	
+    	
+    	System.out.println();
+    	System.out.println(end);
+    }*/
+    
     private static void testNewDist(int m, int n, int c_i, int c_d, int c_r) {
     	System.out.println("testNewDist(" + m + ", " +  n + ", " +  c_i + ", " +  c_d + ", " +  c_r + ")");
     	EditDistance eD = new EditDistance(c_i, c_d, c_r);
@@ -91,17 +151,28 @@ public class EditDistance implements EditDistanceInterface {
     	int[][] dist = eD.getEditDistanceDP(s1, s2);
     	display(dist);
     }
-    /*
+    
+    private static void testGetMinimalEditSequence(int c_i, int c_d, int c_r, String s1, String s2) {
+    	System.out.println("testGetMinimalEditSequence(" + c_i + ", " +  c_d + ", " +  c_r + ", " + s1 + ", " +  s2 + ")");
+
+    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
+    	List<String> ls = eD.getMinimalEditSequence(s1, s2);
+    	
+    	display(ls);
+    }
+    
+    
+    
     public static void main(String[] args) {
     	int m = 5;
     	int n = 4;
     	int c_i = 3;
     	int c_d = 2;
     	int c_r = 6;
-    	String s1 = "abcd", s2 = "adcb";
+    	String s1 = "ab", s2 = "";
     	//testNewDist(m, n, c_i, c_d, c_r);
     	testGetEditDistanceDP(c_i, c_d, c_r, s1, s2);
-    	
+    	testGetMinimalEditSequence(c_i, c_d, c_r, s1, s2);
 	}
-	*/
+	
 };
