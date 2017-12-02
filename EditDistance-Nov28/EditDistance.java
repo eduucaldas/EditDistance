@@ -6,7 +6,7 @@ public class EditDistance implements EditDistanceInterface {
     int c_i, c_d, c_r;
     static int MAX = Integer.MAX_VALUE;
     static int UNDEF = -1;
-
+    
     public EditDistance (int c_i, int c_d, int c_r) {
         this.c_i = c_i;
         this.c_d = c_d;
@@ -32,7 +32,7 @@ public class EditDistance implements EditDistanceInterface {
         }
         return dist;
     }
-
+    
     public List<String> getMinimalEditSequence(String s1, String s2) {
         LinkedList<String> ls = new LinkedList<> ();
         int dist[][] = getEditDistanceDP(s1, s2);
@@ -68,6 +68,8 @@ public class EditDistance implements EditDistanceInterface {
         }
         return ls;
     }
+    
+    //public List<String> getMinimalEditSequenceRec(String s1, String s2)
     
     private int[][] newDist(int m, int n){
     	int[][] dist = new int[m+1][n+1];
