@@ -153,15 +153,15 @@ class Main {
 
         String s1 = "abcd";
         String s2 = "adcb";
-        test1(s1,s2);
-        test2(s1,s2);
+        //test1(s1,s2);
+        //test2(s1,s2);
         test3(s1,s2);
         
-        test3(getRandomString(33), getRandomString(42));
+        //test3(getRandomString(33), getRandomString(42));
         
-        test3(getRandomString(33, "ab"), getRandomString(42, "ab"));
+        //test3(getRandomString(33, "ab"), getRandomString(42, "ab"));
         
-        test4();
+        //test4();
         
     }
 }
