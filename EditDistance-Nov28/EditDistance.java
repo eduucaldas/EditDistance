@@ -5,16 +5,33 @@ public class EditDistance implements EditDistanceInterface {
      
     int c_i, c_d, c_r;
     static int MAX = Integer.MAX_VALUE;
-    static int UNDEF = -1;
-    Pair[][] prec;
-    Pair[][] son;
-    final static Pair undefPos = new Pair(UNDEF, UNDEF);
+    static final int UNDEF = -1;
+    static final int RIGHT = 0;
+    static final int DOWN = 1;
+    static final int DIAG = 2;
+    static final int INSERT = 1;
+    static final int DELETE = 2;
+    static final int REPLACE = 3;
+    static final int JUMP = 4;
     
+    int[][] direcFrom;//from which direction did it came in dist, this is unique
+    //int[][] direcTo;//this is not unique, itll be obtained from direct from
+    //Pair[][] prec;
+    //Pair[][] son;
+    //final static Pair undefPos = new Pair(UNDEF, UNDEF);
+    /*
     static class Pair{
     	public int i;
     	public int j;
     	
-    	
+    	public static void display(Pair[][] matrix) {
+	    	for (int i = 0; i < matrix.length; i++) {
+	    	    for (int j = 0; j < matrix[i].length; j++) {
+	    	        System.out.print(matrix[i][j] + " ");
+	    	    }
+	    	    System.out.println();
+	    	}
+    	}
     	public Pair(int i, int j) {
     		this.i = i;
     		this.j = j;
@@ -32,7 +49,20 @@ public class EditDistance implements EditDistanceInterface {
     		Pair p = (Pair) o;
     		return (p.i == this.i) && (p.j == this.j);
     	}
-    }
+    	
+    	private static void testPair() {
+	    	Pair p = new Pair(1,2);
+	    	int MAX_VECTOR = 10;
+	    	Pair[] v = new Pair[MAX_VECTOR];
+	    	for(int i = 0; i < MAX_VECTOR; i++)
+	    		v[i] = new Pair(i, MAX_VECTOR - i);
+	    	v[0].set(0, 0);
+	    	System.out.println(p);
+	    	for(int i = 0; i < MAX_VECTOR; i++)
+	    		System.out.print(v[i] + " ");
+	    	System.out.println();
+	    }
+    }*/
     
     public EditDistance (int c_i, int c_d, int c_r) {
         this.c_i = c_i;
@@ -47,25 +77,33 @@ public class EditDistance implements EditDistanceInterface {
     	}
     	if(termR < termD) {
     		if(termR < termI) {
-    			prec[i][j].set(i-1, j-1);
-    			son[i-1][j-1].set(i, j);
+    			//prec[i][j].set(i-1, j-1);
+    			//son[i-1][j-1].set(i, j);
+    			//direcTo[i-1][j-1] = DIAG;
+    			direcFrom[i][j] = DIAG;
     			return termR;
     		}
     		else{
-    			prec[i][j].set(i, j-1);
-    			son[i][j-1].set(i, j);
+    			//prec[i][j].set(i, j-1);
+    			//son[i][j-1].set(i, j);
+    			//direcTo[i][j-1] = RIGHT;
+    			direcFrom[i][j] = RIGHT;
     			return termI;
     		}
     	}
     	else {
     		if(termD < termI) {
-    			prec[i][j].set(i-1, j);
-    			son[i-1][j].set(i, j);
+    			//prec[i][j].set(i-1, j);
+    			//son[i-1][j].set(i, j);
+    			//direcTo[i-1][j] = DOWN;
+    			direcFrom[i][j] = DOWN;
     			return termD;
     		}
     		else{
-    			prec[i][j].set(i, j-1);
-    			son[i][j-1].set(i, j);
+    			//prec[i][j].set(i, j-1);
+    			//son[i][j-1].set(i, j);
+    			//direcTo[i][j-1] = RIGHT;
+    			direcFrom[i][j] = RIGHT;
     			return termI;
     		}
     	}
@@ -82,38 +120,68 @@ public class EditDistance implements EditDistanceInterface {
         return dist;
     }
     
-    public List<String> getMinimalEditSequence1(String s1, String s2) {
+    public List<String> getMinimalEditSequence(String s1, String s2) {
         LinkedList<String> ls = new LinkedList<> ();
         int dist[][] = getEditDistanceDP(s1, s2);
-        int i = 0, j = 0;
-        while(i != UNDEF || j != UNDEF) {
-        	display(s1, s2, i, j);
-        	if(son[i][j].i - i == 1 && son[i][j].j - j == 1 && dist[i][j] == dist[i-1][j-1] + c_r) {
+        int i = s1.length(), j = s2.length();
+        Stack<Integer> direcTo = new Stack<>();
+        //System.out.println("direcFrom:");display(direcFrom);
+        //System.out.println("dist:");display(dist);
+        while(i != 0 || j != 0) {
+        	//display(s1, s2, i, j);
+        	
+        	//display(direcFrom);
+            
+        	if(direcFrom[i][j] == DIAG) {
+        		if(dist[i][j] == dist[i-1][j-1] + c_r)
+        			direcTo.push(REPLACE);	
+        		else if(dist[i][j] == dist[i-1][j-1])
+        			direcTo.push(JUMP);
+        		else	
+        			System.out.println("Error");
+        		i--;
+        		j--;
+        	}
+        	else if(direcFrom[i][j] == RIGHT) {
+        		direcTo.push(INSERT);
+        		j--;
+        	}
+        	else if(direcFrom[i][j] == DOWN) {
+        		direcTo.push(DELETE);
+        		i--;
+        	}
+        	else
+        		System.out.println("error in Stack filling");
+        	//i = son[i][j].i;
+        	//j = son[i][j].j;
+        }
+        while(!direcTo.isEmpty()) {
+        	int command = direcTo.pop();
+        	
+        	if(command == REPLACE) {
         		ls.addFirst("replace(" + i + "," + s2.charAt(j) + ")");
+        		i++;
+        		j++;
         	}
-        	else if(son[i][j].i - i == 0 && son[i][j].j - j == 1 ) {
-        		ls.addLast("insert(" + i + "," + s2.charAt(j) + ")");
+        	else if(command == JUMP) {
+        		i++;
+        		j++;
         	}
-        	else if(son[i][j].i - i == 1 && son[i][j].j - j == 0  ) {
+        	else if(command == INSERT) {
+        		ls.addLast("insert(" + j + "," + s2.charAt(j) + ")");
+        		j++;
+        	}
+        	else if(command == DELETE) {
         		ls.addFirst("delete(" + i + ")");
+        		i++;
         	}
-        	else if(!(son[i][j].i - i == 1 && son[i][j].j - j == 1 && dist[i][j] == dist[i-1][j-1]))
-        		System.out.println("Error");
-        	i = son[i][j].i;
-        	j = son[i][j].j;
-        }
-        while(j > 0) {
-        	ls.addFirst("insert(" + i + "," + s2.charAt(j-1) + ")");
-    		j--;
-        }
-        while(i>0) {
-        	ls.addLast("delete(" + (i-1) + ")");
-    		i--;
+        	else
+        		System.out.println("error processing");
         }
         return ls;
     }
     
-    public LinkedList<String> getMinimalEditSequence(String s1, String s2){
+    public LinkedList<String> getMinimalEditSequence1(String s1, String s2){
     	int dist[][] = getEditDistanceDP(s1, s2);
     	return getMinimalEditSequenceRec(s1, s2, dist, s1.length(), s2.length());
     }
@@ -121,20 +189,20 @@ public class EditDistance implements EditDistanceInterface {
     public LinkedList<String> getMinimalEditSequenceRec(String s1, String s2, int[][] dist, int i, int j){
     	LinkedList<String> l;
     	if(i > 0 && j > 0) {
-        	//display(s1, s2, i, j);
-    		if(i - prec[i][j].i == 1 && j - prec[i][j].j == 1 && dist[i][j] == dist[i-1][j-1] + c_r) {
+        	display(s1, s2, i, j);
+    		if(direcFrom[i][j] == DIAG && dist[i][j] == dist[i-1][j-1] + c_r) {
         		l = getMinimalEditSequenceRec(s1, s2, dist, i-1, j-1);
         		l.addFirst("replace(" + (i-1) + "," + s2.charAt(j-1) + ")");
         	}
-        	else if(i - prec[i][j].i == 0 && j - prec[i][j].j == 1 ) {
+        	else if(direcFrom[i][j] == RIGHT) {
         		l = getMinimalEditSequenceRec(s1, s2, dist, i, j-1);
         		l.addLast("insert(" + (j-1) + "," + s2.charAt(j-1) + ")");
         	}
-        	else if(i - prec[i][j].i == 1 && j - prec[i][j].j == 0) {
+        	else if(direcFrom[i][j] == DOWN) {
         		l = getMinimalEditSequenceRec(s1, s2, dist, i-1, j);
         		l.addFirst("delete(" + (i-1) + ")");
         	}
-        	else if(dist[i][j] == dist[i-1][j-1]) {
+        	else if(direcFrom[i][j] == DIAG && dist[i][j] == dist[i-1][j-1]) {
         		l = getMinimalEditSequenceRec(s1, s2, dist, i-1, j-1);
         	}
         	else {
@@ -159,29 +227,39 @@ public class EditDistance implements EditDistanceInterface {
     }
     
     private int[][] init(int m, int n){
-    	prec = new Pair[m+1][n+1];
-    	son = new Pair[m+1][n+1];
+    	//prec = new Pair[m+1][n+1];
+    	//son = new Pair[m+1][n+1];
+    	direcFrom = new int[m+1][n+1];
+    	//direcTo = new int[m+1][n+1];
     	int[][] dist = new int[m+1][n+1];
         for(int j = 1; j <= n; j++) {
         	for(int i = 1; i <= m; i++) {
             	dist[i][j] = UNDEF;
-            	prec[i][j] = new Pair(UNDEF, UNDEF);
-            	son[m-i][n-j] = new Pair(UNDEF, UNDEF);
+            	//prec[i][j] = new Pair(UNDEF, UNDEF);
+            	//son[m-i][n-j] = new Pair(UNDEF, UNDEF);
+            	//direcTo[m-i][n-j] = UNDEF;
+            	direcFrom[i][j] = UNDEF;
             }
-        }
-        for(int i = 1; i < m+1; i++) {
-        	dist[i][0] = i*c_d;
-        	prec[i][0] = new Pair(i-1,0);
-        	son[i-1][n] = new Pair(i,n);
         }
         for(int i = 1; i < n+1; i++) {
         	dist[0][i] = i*c_i;
-        	prec[0][i] = new Pair(0, i-1);
-        	son[m][i-1] = new Pair(m,i);
+        	//prec[0][i] = new Pair(0, i-1);
+        	//son[m][i-1] = new Pair(m,i);
+        	//direcTo[m][i-1] = RIGHT;
+        	direcFrom[0][i] = RIGHT;
+        }
+        for(int i = 1; i < m+1; i++) {
+        	dist[i][0] = i*c_d;
+        	//prec[i][0] = new Pair(i-1,0);
+        	//son[i-1][n] = new Pair(i,n);
+        	//direcTo[i-1][n] = DOWN;
+        	direcFrom[i][0] = DOWN;
         }
         dist[0][0] = 0;
-        prec[0][0] = new Pair(UNDEF, UNDEF);
-        son[m][n] = new Pair(UNDEF, UNDEF);
+        //prec[0][0] = new Pair(UNDEF, UNDEF);
+        //son[m][n] = new Pair(UNDEF, UNDEF);
+        direcFrom[0][0] = UNDEF;
+        //direcTo[m][n] = UNDEF;
         return dist;
     }
     
@@ -194,14 +272,7 @@ public class EditDistance implements EditDistanceInterface {
     	}
     }
     
-    public static void display(Pair[][] matrix) {
-    	for (int i = 0; i < matrix.length; i++) {
-    	    for (int j = 0; j < matrix[i].length; j++) {
-    	        System.out.print(matrix[i][j] + " ");
-    	    }
-    	    System.out.println();
-    	}
-    }
+    
     
     public static void display(List<String> ls) {
     	int n_op = 0;
@@ -217,94 +288,8 @@ public class EditDistance implements EditDistanceInterface {
     	System.out.println(s1.substring(0, i));
     	System.out.println(s2.substring(0, j));
     }
-    
-    private static void testInit(int m, int n, int c_i, int c_d, int c_r) {
-    	System.out.println("testInit(" + m + ", " +  n + ", " +  c_i + ", " +  c_d + ", " +  c_r + ")");
-    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
-    	int[][] dist = eD.init(m,n);
-    	display(dist);
-    	display(eD.prec);
-    	display(eD.son);
-    }
-    
-    private static void testGetEditDistanceDP(int c_i, int c_d, int c_r, String s1, String s2) {
-    	System.out.println("testGetEditDistanceDP(" + c_i + ", " +  c_d + ", " +  c_r + ", " + s1 + ", " +  s2 + ")");
 
-    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
-    	int[][] dist = eD.getEditDistanceDP(s1, s2);
-    	display(dist);
-    	display(eD.prec);
-    }
-    
-    private static void testGetMinimalEditSequence(int c_i, int c_d, int c_r, String s1, String s2) {
-    	System.out.println("testGetMinimalEditSequence(" + c_i + ", " +  c_d + ", " +  c_r + ", " + s1 + ", " +  s2 + ")");
-    	
-    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
-    	List<String> ls = eD.getMinimalEditSequence(s1, s2);
-    	boolean validSequence = Main.preValidateSequence(ls, s1, s2);
-    	System.out.println("Is it a valid Sequence ? " + validSequence);
-    	display(ls);
-    }
-    
-    private static void testEditDistance(int c_i, int c_d, int c_r, String s1, String s2) throws Exception {
-    	System.out.println("testEditDistance(" + c_i + ", " +  c_d + ", " +  c_r + ", " + s1 + ", " +  s2 + ")");
-    	long tictoc = System.nanoTime();
-    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
-    	int dist[][] = eD.getEditDistanceDP(s1, s2);
-    	List<String> ls = eD.getMinimalEditSequence(s1, s2);
-    	tictoc = (System.nanoTime() - tictoc)/1000000;
-    	System.out.println("Transforming "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + ")");
-    	display(dist);
-    	System.out.println("Cost = "+dist[s1.length()][s2.length()]);
-    	System.out.println("Minimal edits from "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + "):");
-    	display(ls);
-    	
-    	boolean validSequence = Main.preValidateSequence(ls, s1, s2);
-    	boolean optimalSequence = optimalSequence(ls, dist[s1.length()][s2.length()], eD.c_i, eD.c_d, eD.c_r);
-    	System.out.println("Is it a valid Sequence ? " + validSequence);
-    	System.out.println("Is it the optimal Sequence ? " + optimalSequence);
-    	System.out.println("This test had m = " + s1.length() + ", n = " + s2.length() + "\n It took " + tictoc + " milliseconds");	
-    }
-    
-    private static void testBIGEditDistance(int c_i, int c_d, int c_r, String s1, String s2) throws Exception {
-    	//System.out.println("testBIGEditDistance(" + c_i + ", " +  c_d + ", " +  c_r + ", " + s1 + ", " +  s2 + ")");
-    	long start = System.nanoTime();
-    	
-    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
-    	int dist[][] = eD.getEditDistanceDP(s1, s2);
-    	long tictoc = (System.nanoTime() - start)/1000000;
-    	System.out.println("This test had m = " + s1.length() + ", n = " + s2.length() + "\n First part took " + tictoc + " milliseconds");
-    	List<String> ls = eD.getMinimalEditSequence(s1, s2);
-    	tictoc = (System.nanoTime()/1000000 - tictoc);
-    	System.out.println("This test had m = " + s1.length() + ", n = " + s2.length() + "\n Second part took " + tictoc + " milliseconds");
-    	
-    	//System.out.println("Transforming "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + ")");
-    	//display(dist);
-    	//System.out.println("Cost = "+dist[s1.length()][s2.length()]);
-    	//System.out.println("Minimal edits from "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + "):");
-    	//display(ls);
-    	
-    	boolean validSequence = Main.preValidateSequence(ls, s1, s2);
-    	boolean optimalSequence = optimalSequence(ls, dist[s1.length()][s2.length()], eD.c_i, eD.c_d, eD.c_r);
-    	System.out.println("Is it a valid Sequence ? " + validSequence);
-    	System.out.println("Is it the optimal Sequence ? " + optimalSequence);
-    	System.out.println("This test had m = " + s1.length() + ", n = " + s2.length() + "\n It took " + (System.nanoTime() - start)/1000000 + " milliseconds");
-    }
-
-    private static void testPair() {
-    	Pair p = new Pair(1,2);
-    	int MAX_VECTOR = 10;
-    	Pair[] v = new Pair[MAX_VECTOR];
-    	for(int i = 0; i < MAX_VECTOR; i++)
-    		v[i] = new Pair(i, MAX_VECTOR - i);
-    	v[0].set(0, 0);
-    	System.out.println(p);
-    	for(int i = 0; i < MAX_VECTOR; i++)
-    		System.out.print(v[i] + " ");
-    	System.out.println();
-    }
-
-    public static boolean optimalSequence(List<String> es, int cost, int c_i, int c_d, int c_r) throws Exception{
+    public static boolean isOptimalSequence(List<String> es, int cost, int c_i, int c_d, int c_r) throws Exception{
         int i = 0, d = 0, r = 0;
     	for (String op : es) {
             String [] args = op.split("[\\(\\)\\,]", 20);
@@ -321,48 +306,170 @@ public class EditDistance implements EditDistanceInterface {
         else
         	return false;
     }
+
+    private static void testInit(int m, int n, int c_i, int c_d, int c_r) {
+    	System.out.println("testInit(" + m + ", " +  n + ", " +  c_i + ", " +  c_d + ", " +  c_r + ")");
+    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
+    	int[][] dist = eD.init(m,n);
+    	display(dist);
+    	System.out.println("direcTo: ");
+    	//display(eD.direcTo);
+    	//display(eD.prec);
+    	//display(eD.son);
+    }
+    
+    private static void testGetEditDistanceDP(int c_i, int c_d, int c_r, String s1, String s2) {
+    	System.out.println("testGetEditDistanceDP(" + c_i + ", " +  c_d + ", " +  c_r + ", " + s1 + ", " +  s2 + ")");
+
+    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
+    	int[][] dist = eD.getEditDistanceDP(s1, s2);
+    	display(dist);
+    	//display(eD.direcTo);
+    	//display(eD.prec);
+    }
+    
+    private static void testGetMinimalEditSequence(int c_i, int c_d, int c_r, String s1, String s2) {
+    	System.out.println("testGetMinimalEditSequence(" + c_i + ", " +  c_d + ", " +  c_r + ", " + s1 + ", " +  s2 + ")");
+    	
+    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
+    	List<String> ls = eD.getMinimalEditSequence(s1, s2);
+    	boolean validSequence = Main.preValidateSequence(ls, s1, s2);
+    	System.out.println("Is it a valid Sequence ? " + validSequence);
+    	//display(ls);
+    }
+    
+    private static void testEditDistance(int c_i, int c_d, int c_r, String s1, String s2) throws Exception {
+    	System.out.println("testEditDistance(" + c_i + ", " +  c_d + ", " +  c_r + ", " + s1 + ", " +  s2 + ")");
+    	long tictoc = System.nanoTime();
+    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
+    	int dist[][] = eD.getEditDistanceDP(s1, s2);
+    	List<String> ls = eD.getMinimalEditSequence(s1, s2);
+    	tictoc = (System.nanoTime() - tictoc)/1000000;
+    	System.out.println("Transforming "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + ")");
+    	display(dist);
+    	System.out.println("Cost = "+dist[s1.length()][s2.length()]);
+    	System.out.println("Minimal edits from "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + "):");
+    	display(ls);
+    	//System.out.println("direcTo:");
+    	//display(eD.direcTo);
+    	boolean validSequence = Main.preValidateSequence(ls, s1, s2);
+    	boolean optimalSequence = isOptimalSequence(ls, dist[s1.length()][s2.length()], eD.c_i, eD.c_d, eD.c_r);
+    	System.out.println("Is it a valid Sequence ? " + validSequence);
+    	System.out.println("Is it the optimal Sequence ? " + optimalSequence);
+    	System.out.println("This test had m = " + s1.length() + ", n = " + s2.length() + "\n It took " + tictoc + " milliseconds");	
+    }
+    
+    private static void testBIGEditDistance(int c_i, int c_d, int c_r, String s1, String s2) throws Exception {
+    	//System.out.println("testBIGEditDistance(" + c_i + ", " +  c_d + ", " +  c_r + ", " + s1 + ", " +  s2 + ")");
+    	long start = System.nanoTime();
+    	
+    	EditDistance eD = new EditDistance(c_i, c_d, c_r);
+    	int dist[][] = eD.getEditDistanceDP(s1, s2);
+    	long tictoc = (System.nanoTime() - start)/1000000;
+    	System.out.println("This test had m = " + s1.length() + ", n = " + s2.length() + "\n First part took " + tictoc + " milliseconds");
+    	List<String> ls = eD.getMinimalEditSequence(s1, s2);
+    	tictoc = (System.nanoTime()-start)/1000000 - tictoc;
+    	System.out.println("This test had m = " + s1.length() + ", n = " + s2.length() + "\n Second part took " + tictoc + " milliseconds");
+    	
+    	//System.out.println("Transforming "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + ")");
+    	//display(dist);
+    	//System.out.println("Cost = "+dist[s1.length()][s2.length()]);
+    	//System.out.println("Minimal edits from "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + "):");
+    	//display(ls);
+    	
+    	boolean isValidSequence = Main.preValidateSequence(ls, s1, s2);
+    	boolean isOptimalSequence = isOptimalSequence(ls, dist[s1.length()][s2.length()], eD.c_i, eD.c_d, eD.c_r);
+    	System.out.println("Is it a valid Sequence ? " + isValidSequence);
+    	System.out.println("Is it an optimal Sequence ? " + isOptimalSequence);
+    	System.out.println("This test had m = " + s1.length() + ", n = " + s2.length() + "\n It took " + ((System.nanoTime() - start)/1000000) + " milliseconds");
+    }
+
+   
     
     public static void main(String[] args) throws Exception {
     	int c_i = 3;
     	int c_d = 2;
-    	int c_r = 1;
-    	String s1 = "Phasellus aliquam metus quam, sed congue tortor malesuada a. Cras non lectus egestas, aliquam massa a, mattis mauris. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Etiam at velit hendrerit, tristique nunc eu, vestibulum ex. Phasellus et faucibus felis. In laoreet lorem a ligula volutpat finibus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec vulputate justo eu dui condimentum dignissim. Fusce sit amet bibendum odio.\n" + 
-    			"\n" + 
-    			"Quisque egestas fermentum pulvinar. Sed eleifend at nisi ut consectetur. Pellentesque scelerisque quam sed urna scelerisque mattis ut aliquam odio. Maecenas aliquam quam nec erat tristique feugiat. Aenean in faucibus nisi, vel tincidunt enim. Fusce vel sapien ac sem finibus placerat. Nulla vehicula ipsum eu nibh sollicitudin maximus. Nunc dignissim erat sed felis iaculis, at condimentum diam fermentum. Sed sodales efficitur ligula, in porttitor sem ultricies id. Praesent a urna a erat ullamcorper dapibus. Nunc fringilla metus ut volutpat egestas. Aliquam molestie faucibus rhoncus. Vivamus id arcu a odio scelerisque hendrerit eu id orci. Ut efficitur mauris neque, sit amet suscipit metus sodales lacinia. Phasellus neque nisl, condimentum a elit quis, egestas ultrices augue.\n" + 
-    			"\n" + 
-    			"Proin at quam eget dolor vehicula sollicitudin eu quis nisi. Sed tempus pretium ex, sed mollis dui sagittis eu. Suspendisse vulputate imperdiet risus, sed porttitor tortor congue quis. Quisque est ipsum, placerat sagittis ipsum at, facilisis condimentum ante. Nunc tincidunt tincidunt dolor, in suscipit metus. Donec sit amet justo non quam rutrum aliquet. Curabitur gravida dapibus metus, ac euismod turpis lacinia in. Etiam auctor ipsum porttitor mi sollicitudin condimentum. Ut id placerat metus, a tempor ante. Sed facilisis egestas est nec tincidunt. Quisque in malesuada urna. Nunc aliquet tortor quis ante accumsan, at porta eros auctor.\n" + 
-    			"\n" + 
-    			"Nullam vulputate elementum metus, eget lacinia quam consectetur ut. Etiam id ex id mi blandit lacinia. Quisque imperdiet risus velit, vitae blandit arcu lacinia et. Phasellus aliquam eleifend felis a mollis. Praesent a condimentum augue, eget congue ligula. Suspendisse mollis quam eu velit interdum sagittis. Sed mattis condimentum vulputate.\n" + 
-    			"\n" + 
-    			"Vestibulum maximus quam massa, ac semper diam dictum ac. Aenean augue velit, ultricies sed tortor nec, condimentum aliquam nunc. Vivamus faucibus, arcu vitae aliquet mollis, diam tellus commodo quam, ac blandit lorem dolor eu metus. Suspendisse et dignissim massa, vitae laoreet purus. Fusce libero ex, volutpat vel tortor ut, semper commodo felis. Sed in magna porta, rutrum lorem eu, rutrum sapien. Suspendisse vehicula enim quis congue lobortis. Sed porttitor tempus ligula. Vestibulum id lacus vel ipsum interdum pellentesque. Suspendisse dictum suscipit varius. Nulla eget lectus malesuada, finibus neque malesuada, iaculis odio. Fusce bibendum porta risus, vel pellentesque nunc egestas vitae. Nam eu porta magna. Mauris ullamcorper, massa sed iaculis facilisis, magna ipsum vestibulum urna, a interdum arcu sapien vitae ante. Suspendisse luctus dapibus metus, consectetur vulputate nibh accumsan nec.\n" + 
-    			"\n" + 
-    			"Proin purus augue, tristique et elementum non, lacinia nec arcu. Sed tempus diam sit amet sagittis commodo. Integer orci lacus, viverra hendrerit ipsum ut, facilisis vulputate massa. Etiam quis nulla non turpis lobortis elementum. Maecenas vel purus non dolor rhoncus mattis nec at orci. Vivamus quis consequat nunc. Fusce orci magna, vehicula eu ultricies ac, lacinia in arcu. Nullam dignissim eros in eros lacinia condimentum.\n" + 
-    			"\n" + 
-    			"Nulla iaculis massa lorem. Ut auctor, metus vel placerat scelerisque, ligula quam sollicitudin orci, vel pulvinar libero nibh non tellus. Aliquam tempus odio id purus lacinia, a tempus quam tempus. Suspendisse sodales, est a accumsan pulvinar, lectus diam tristique metus, quis aliquam lorem arcu eu mauris. Suspendisse blandit tellus elit, ut feugiat neque malesuada sit amet. Cras sit amet eleifend nulla. Nullam molestie felis quis nibh faucibus, eu maximus risus consequat. Integer nec ante libero. Vestibulum ac lectus ut ligula rhoncus pulvinar id in ante. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aenean mattis arcu purus, at dictum libero varius non. Aliquam erat volutpat. Donec sit amet dapibus lectus. Sed non suscipit leo. Praesent in enim fermentum, convallis velit at, ullamcorper sapien.\n" + 
-    			"\n" + 
-    			"Nulla facilisi. Fusce placerat auctor hendrerit. Morbi at molestie nisl. Donec rhoncus sed dui vulputate porttitor. Integer et pellentesque odio, eu dapibus augue. Morbi eu tortor condimentum, blandit magna et, pretium leo. Vivamus semper vel justo volutpat porta. Maecenas ut tellus id ligula lobortis eleifend at nec ligula. Nulla in tempor metus. Pellentesque rhoncus molestie malesuada. Fusce placerat ornare libero sed lacinia. Phasellus non dictum erat, in pharetra tellus. Donec euismod ultricies mi, nec dapibus lorem fringilla eget. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Aliquam erat volutpat.\n" + 
-    			"\n" + 
-    			"Sed ultrices euismod sem. Mauris volutpat ligula eget egestas aliquam. Aliquam mattis eu nisi a dapibus. Ut neque est, pulvinar sit amet tristique non, finibus tincidunt est. Phasellus aliquam sed ante nec mattis. Integer luctus elit in commodo varius. In pharetra est vitae dolor malesuada euismod. Nulla a scelerisque purus, et condimentum tortor. Donec eu suscipit lorem. Aliquam in molestie turpis, aliquet ultrices est. Ut molestie bibendum diam, ut interdum metus volutpat id. Praesent quis suscipit erat, eu orci aliquam.";
-        String s2 = "Sed accumsan, tortor sed lobortis lobortis, justo ligula aliquam diam, at elementum velit ligula sit amet libero. Ut pellentesque, enim id efficitur commodo, ante ligula facilisis purus, id aliquam mi tortor vel metus. Donec sed laoreet mauris. Pellentesque a lobortis lacus, sed porta ex. Pellentesque volutpat lacinia velit et mollis. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Aliquam faucibus, dui sit amet dignissim auctor, mi nisi cursus ante, vitae dapibus massa erat fermentum ante. Ut ipsum augue, fermentum vitae dignissim a, sagittis ut nibh.\n" + 
+    	int c_r = 6;
+    	
+    	//use lorem ipsum generator for big tests
+    	String s1 = "Mr. Sherlock Holmes+ who was usually very late in the mornings+ save upon those not infrequent occasions when he was up all night+ was seated at the breakfast table. I stood upon the hearth-rug and picked up the stick which our visitor had left behind him the night before. It was a fine+ thick piece of wood+ bulbous-headed+ of the sort which is known as a \"Penang lawyer.\" Just under the head was a broad silver band nearly an inch across. \"To James Mortimer+ M.R.C.S.+ from his friends of the C.C.H.+\" was engraved upon it+ with the date \"1884.\" It was just such a stick as the old-fashioned family practitioner used to carry -- dignified+ solid+ and reassuring.";
+        String s2 = "Chapter I. Mr. Sherlock Holmes+ who was usually very late in the mornings+ save upon those not infrequent occasions when he was up all night+ was seated at the breakfast table. I stood upon the hearth-rug and picked up the walking stick which our visitor had left behind him the night before. It was a fine+ thick piece of wood+ of the sort which is known as a \"Penang lawyer.\" Just under the head was a broad silver band nearly an inch across. \"To James Mortimer+ M.R.C.S.+ from his friends of the C.C.H.+\" was engraved upon it+ with the date \"1984.\" It was just such a stick as the old-fashioned family practitioner used to carry -- dignified+ solid+ and reassuring. \"Well+ Watson+ what do you make of it?\"";
+        
+        s1 = "Duis varius odio dui, eu vulputate dui vehicula mollis. Morbi metus enim, finibus id lacus in, pretium mollis justo. Pellentesque gravida, est ut ultricies condimentum, nisl lacus egestas tellus, in ullamcorper nunc ex et nulla. Morbi iaculis vehicula pharetra. Pellentesque quis elit diam. Aenean eget feugiat felis. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Duis erat justo, vulputate et malesuada ut, blandit sed dui. Quisque sed convallis dolor. Praesent eu eleifend mauris. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Morbi tempor sapien id dignissim vehicula. Morbi eu metus ex.\n" + 
         		"\n" + 
-        		"Sed vehicula quam ut est finibus porttitor. Interdum et malesuada fames ac ante ipsum primis in faucibus. Fusce non arcu quis sem mollis pharetra et ac est. Praesent tincidunt dui in eros venenatis suscipit. Duis egestas odio sed vehicula finibus. Etiam euismod, erat ut facilisis facilisis, nulla turpis porta ligula, nec vulputate arcu ligula vel ligula. Aenean varius quam dui, sit amet consectetur tellus consectetur quis.\n" + 
+        		"Nunc porta massa eget leo interdum posuere. Aenean vehicula, risus in blandit placerat, turpis metus lobortis felis, sed interdum mi lacus volutpat erat. Integer tincidunt, quam eu tempor lobortis, tortor purus pharetra lorem, sit amet lobortis tellus sem quis erat. Nulla finibus pulvinar pulvinar. Phasellus cursus sit amet nulla vitae vestibulum. Phasellus vitae turpis et lectus iaculis accumsan. Maecenas laoreet quam massa, vitae suscipit leo consequat a. Phasellus auctor mi vel ornare ullamcorper. Nullam eget iaculis eros, nec maximus nisl.\n" + 
         		"\n" + 
-        		"Vestibulum at erat at lectus dapibus interdum. Nam porttitor risus a fringilla feugiat. Sed id mattis tellus. Phasellus tincidunt, nunc at fringilla accumsan, nulla quam egestas elit, eget placerat nisi ligula non nibh. Donec in tortor sem. Curabitur in faucibus erat, nec molestie dolor. Suspendisse potenti. Nam consequat lectus ac vulputate efficitur. Nulla eget libero ex. Fusce suscipit neque in diam aliquet, in tristique odio vehicula. Nullam non facilisis leo.\n" + 
+        		"Nunc condimentum sapien at magna interdum consectetur ac et est. In lacus nisl, fermentum id luctus vel, ultrices vel velit. Nullam leo sapien, dignissim nec mattis nec, tristique et ante. Aenean nec mollis nunc. Quisque tincidunt orci ac massa vulputate egestas. Maecenas efficitur, sem at porta dapibus, sem mi iaculis nisl, nec volutpat tellus erat id libero. Suspendisse venenatis turpis quis feugiat vulputate. Quisque sit amet nisi nec dui cursus scelerisque.\n" + 
         		"\n" + 
-        		"Morbi sed urna ornare, malesuada est vitae, finibus lorem. Vivamus eu malesuada ex. Mauris ut aliquet sapien, sit amet aliquet lectus. Donec suscipit vulputate purus ultricies suscipit. Curabitur nec facilisis ipsum, et varius ligula. Ut ultricies orci nisi, id volutpat nulla pretium quis. Sed non consectetur nibh, viverra facilisis neque. Quisque rhoncus est a turpis laoreet scelerisque. Integer in justo et lectus pulvinar tincidunt. Sed sit amet elit sed sapien ultrices gravida.\n" + 
+        		"Nam dignissim id est at tincidunt. Pellentesque quis magna sagittis, commodo sapien eget, tincidunt nunc. Aenean molestie sollicitudin neque. Curabitur et purus dolor. Sed condimentum maximus consequat. Curabitur eu semper ex. Morbi venenatis magna in tristique pharetra. Curabitur rhoncus bibendum nisi vel euismod. Vestibulum quis est rutrum, semper magna sed, aliquet nisl. Etiam rhoncus ligula eu ullamcorper elementum. Donec libero quam, vestibulum vel arcu nec, congue auctor lectus. Donec dignissim, massa eget sagittis feugiat, lacus tellus fringilla tortor, ac molestie enim ante sed arcu. Pellentesque quis porttitor sapien. Aliquam at ultrices lectus, sit amet imperdiet sem. Sed feugiat accumsan enim, in porta nisl blandit a. Quisque condimentum massa euismod enim consectetur, eu porta nunc gravida.\n" + 
         		"\n" + 
-        		"Proin luctus id nisl a pharetra. Suspendisse quis augue sit amet dolor varius ullamcorper a quis mauris. Nullam mi turpis, facilisis sed vestibulum nec, condimentum nec est. Nulla a gravida nibh, euismod dictum sem. Aliquam a sapien in orci eleifend ornare. Donec at auctor est, in sollicitudin arcu. Vivamus vitae libero in eros elementum gravida vitae non mi. Phasellus lacinia mi sed tortor cursus pulvinar. Donec ut lacus at dui lobortis aliquam quis eu nulla. Nunc a dolor nec nulla porta vulputate a eu tortor. Aliquam tristique neque lacus, ac tempor mi sollicitudin eget. Sed tempus posuere iaculis. Nullam ligula orci, fermentum vel ornare non, finibus tincidunt libero.\n" + 
+        		"Sed ut orci eleifend, suscipit lorem in, hendrerit lectus. Maecenas tincidunt eros justo, vel tempor elit lobortis vitae. Pellentesque mollis nunc id purus varius interdum. Nam sagittis ligula ac tellus pellentesque, vel egestas ex maximus. Sed ut elit orci. Pellentesque velit mi, posuere sit amet suscipit eu, malesuada vel purus. Sed ultrices scelerisque dignissim. Proin efficitur magna sapien. Nulla in interdum nunc.\n" + 
         		"\n" + 
-        		"Cras commodo nisi non venenatis cursus. Ut vestibulum semper mattis. Vivamus sit amet lacus vehicula, molestie lacus eget, eleifend nunc. Aliquam porttitor quis turpis ut volutpat. Donec feugiat vestibulum lacus, in consequat ante tincidunt in. Aliquam in nunc non augue aliquam vehicula vitae id felis. Etiam neque mauris, feugiat et tristique at, fermentum nec nibh. Nullam congue ipsum at risus malesuada eleifend. Duis at ipsum iaculis, luctus lorem porta, auctor ex. Nullam finibus, dolor sit amet hendrerit sodales, urna sem placerat turpis, at tincidunt mauris sem eu purus. Aliquam erat volutpat.\n" + 
+        		"Nam ullamcorper ipsum non magna dapibus, nec iaculis libero semper. Duis tincidunt ex eget ligula placerat, quis porttitor mi hendrerit. Quisque a urna ut ipsum tristique feugiat. Nulla eget varius sem. Donec imperdiet a sem quis dictum. Integer erat libero, laoreet vehicula facilisis ac, pulvinar ut augue. Curabitur quis turpis finibus lorem vehicula pharetra. Nunc lacinia vulputate nisi, vitae facilisis leo pulvinar vitae. Donec vitae dui odio. Curabitur quis quam sed lacus euismod volutpat ac nec odio.\n" + 
         		"\n" + 
-        		"Pellentesque pulvinar a lacus quis cursus. Nullam sem orci, sodales sit amet iaculis at, lacinia vitae mauris. Aenean iaculis pulvinar justo, tempor euismod sapien euismod quis. Phasellus condimentum velit vel nisi varius ullamcorper. Nunc euismod urna tellus, et finibus eros dictum id. Nam nec quam dolor. Ut at nisl eu dui ultricies convallis. Proin eu tempus neque, ut dapibus arcu. Sed elementum cursus nulla a tempus. Nullam nulla elit, mattis ac mauris dictum, varius volutpat tellus. Phasellus rutrum consectetur luctus. Praesent placerat, enim a eleifend lobortis, nisl magna placerat enim, eu mollis magna urna nec risus.\n" + 
+        		"Etiam feugiat tellus sed dapibus fringilla. Donec aliquam, odio ut dignissim semper, quam nisi consequat sem, mollis convallis lorem ligula quis odio. Aenean tristique, nunc sed commodo tincidunt, tortor nulla porta metus, non mattis mauris neque eu velit. Nullam ligula quam, suscipit in dictum ac, consectetur sed mi. Quisque euismod ex ac tortor feugiat, ac aliquet odio tristique. Etiam tellus arcu, accumsan quis luctus ac, dictum in lectus. Quisque id ipsum bibendum, feugiat diam ut, placerat ligula. Pellentesque ultricies lacinia nisl in maximus. Cras accumsan maximus lorem, non pretium enim vestibulum eu. Cras quis pulvinar tellus. Nullam mattis id massa sit amet consequat. Morbi a ante enim. Suspendisse potenti. Vestibulum cursus commodo felis, in pellentesque velit suscipit ac.\n" + 
         		"\n" + 
-        		"Vivamus a lacus dolor. Praesent id libero vitae dolor pulvinar suscipit. Donec porta ex ex, vitae fringilla nibh tincidunt id. Aliquam porta aliquet diam. Proin quis commodo quam, quis efficitur nunc. Aenean sit amet neque pretium, facilisis ex vel, iaculis tortor. Vivamus condimentum gravida elit eu fringilla. Nulla interdum sed purus ut sollicitudin. Duis quam nulla, laoreet vel luctus id, faucibus sed diam. Quisque ornare dui quis tortor scelerisque aliquam.\n" + 
+        		"Vivamus eget feugiat mi, id lacinia sem. In rutrum sit amet libero eget eleifend. Donec sit amet nulla posuere, vehicula tortor gravida, consectetur neque. Nunc luctus, est vel iaculis congue, velit elit fringilla orci, sed sollicitudin sem odio ut risus. Proin mollis mauris sit amet odio dapibus, eget tincidunt nulla egestas. Ut ultricies erat eu quam ultricies, a sollicitudin massa lobortis. Quisque sit amet mi quam. Nam convallis odio ut scelerisque laoreet. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Donec eu purus purus.\n" + 
         		"\n" + 
-        		"Ut ullamcorper eros vitae purus mollis, eget faucibus mi auctor. Aliquam erat volutpat. Suspendisse accumsan dui odio, non aliquet nisl pulvinar in. Sed molestie ex et est dictum molestie. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Integer vitae est et orci placerat molestie. Donec vitae rutrum est. Fusce sagittis, orci eget ullamcorper placerat, erat nulla dignissim nisl, sed rhoncus ex amet.";
+        		"Etiam ultrices, nulla eu venenatis elementum, leo erat venenatis massa, sed eleifend orci sem eget lorem. Pellentesque a eros tincidunt, scelerisque erat id, condimentum dui. Proin eu ipsum lacus. Vestibulum non nunc pulvinar, hendrerit arcu eget, tristique diam. Aenean felis massa, dictum eget justo vel, aliquet ultrices sapien. Morbi id fermentum nisl. Morbi quis tempus lacus.\n" + 
+        		"\n" + 
+        		"Duis ut ligula eget erat molestie laoreet ac eu metus. Aliquam eu imperdiet odio. Vivamus in mauris aliquam, consectetur nulla vitae, tempus nunc. Maecenas ullamcorper eget purus non vehicula. Proin eu dui magna. Etiam congue tristique ligula, et feugiat magna. Curabitur congue dui lacus, et aliquam neque scelerisque ac.\n" + 
+        		"\n" + 
+        		"Nam sed augue quam. Vivamus nunc ipsum, vestibulum vitae ex vitae, molestie tincidunt lectus. Maecenas in auctor quam. Sed dignissim, purus non mattis fringilla, purus tortor lacinia tellus, eget ornare tortor magna id augue. Maecenas ac tempus urna, nec eleifend lectus. Nam malesuada velit ut leo vulputate maximus. Cras consectetur metus vel viverra imperdiet. Nam mattis ullamcorper nisl at accumsan. Praesent venenatis laoreet gravida. Sed pharetra ipsum et mi suscipit, nec imperdiet ex elementum. Sed dolor mauris, vulputate sit amet augue eu, placerat gravida sapien. Cras ac ornare justo, id maximus tortor. Integer ornare leo quam, eget rhoncus diam ultrices egestas. Vestibulum nec rhoncus sapien, sed hendrerit justo. Proin luctus imperdiet nulla sit amet tempus. Cras vitae scelerisque risus, eu lacinia lacus.\n" + 
+        		"\n" + 
+        		"Cras eget bibendum nunc, ac molestie sapien. Aliquam tellus eros, efficitur ut turpis porta, cursus luctus magna. Vivamus placerat massa eros, quis pellentesque justo aliquet sed. Sed venenatis dui ac eros dictum hendrerit. Quisque malesuada tortor eget vehicula facilisis. Cras eleifend luctus lectus, eget facilisis leo pretium vel. Integer ac ex non ex rhoncus venenatis non quis est. Nam at nunc luctus, aliquet arcu vel, mattis sapien. Etiam eu mauris turpis.\n" + 
+        		"\n" + 
+        		"In at tortor sed orci gravida rutrum. Sed in suscipit elit. Vivamus eu varius enim. Maecenas dictum felis quis rutrum feugiat. Sed semper erat id massa gravida, ac convallis arcu auctor. Ut varius consequat ipsum, eget fringilla nisl. Sed non lacinia nisl.\n" + 
+        		"\n" + 
+        		"Etiam lobortis risus in gravida porta. Etiam tristique semper risus, vitae pellentesque urna aliquet eu. Nulla diam enim, dignissim vitae tincidunt ut, pretium vel diam. Praesent porta egestas felis, et luctus nibh sagittis non. Sed vel massa eget risus scelerisque venenatis. Quisque vestibulum erat sed ipsum rutrum eleifend ac id orci. Proin faucibus nunc eu turpis placerat tempor. Interdum et malesuada fames ac ante ipsum primis in faucibus. Mauris sagittis turpis a velit bibendum, at facilisis sapien sagittis.\n" + 
+        		"\n" + 
+        		"Nunc faucibus vel nulla non fringilla. Aliquam maximus elementum sollicitudin. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nullam quam urna, condimentum eget egestas vitae, maximus vel magna. Donec eu ligula pulvinar tortor aliquam efficitur vel et magna. Suspendisse luctus eleifend interdum. Duis a velit dignissim, ultricies velit ac, convallis justo. Pellentesque malesuada, urna vel semper eleifend, mi sem pellentesque turpis, eget condimentum risus arcu ac metus. Proin tincidunt posuere sapien, eget congue metus posuere eget. Proin imperdiet sollicitudin elit, eu viverra ex semper at. Aenean ac volutpat orci. Ut volutpat molestie eros, ac porttitor purus congue at. Donec neque risus, cursus eu commodo faucibus, ullamcorper ac erat. Donec id nibh non turpis porta semper. Etiam efficitur vulputate orci et vestibulum. Fusce vel cursus ex.\n" + 
+        		"\n" + 
+        		"Aliquam a elit ligula. Cras at ipsum eu metus tempor pretium eget at sem. Aenean eget sapien ac lectus gravida pulvinar quis in tellus. Ut efficitur lacus a sapien dignissim accumsan. Nunc dictum faucibus metus. Praesent vel hendrerit sem. Cras a lectus congue, convallis tellus id, ornare libero. Nullam vitae lacus at turpis eleifend tristique. Etiam posuere tincidunt risus in viverra. Fusce risus odio, vehicula in rutrum id, blandit non dolor. Nulla facilisi. Morbi varius odio nec tempus porta. Praesent ut ligula blandit, malesuada nibh vitae, egestas ex. In molestie sodales mi, dictum sollicitudin nibh eleifend ut. Sed pellentesque massa in tellus ullamcorper consequat. Pellentesque dictum metus enim, ut efficitur odio aliquet sit amet.\n" + 
+        		"\n" + 
+        		"Maecenas at ante dignissim, faucibus nulla a, commodo velit. Proin sit amet ultricies sem. Etiam eu erat in ex interdum porttitor. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nam quis lectus orci. Proin sed arcu ac ipsum finibus laoreet aliquam fermentum dui. In luctus felis vitae mi molestie, sed lacinia est fermentum. In non pretium nulla. Vivamus scelerisque sapien odio, nec ultrices erat tincidunt ac. In hac habitasse platea dictumst. Sed a ex eu ipsum venenatis viverra. Maecenas mollis tempor orci id elementum.\n" + 
+        		"\n" + 
+        		"Donec mi metus, pulvinar sed semper non, eleifend non lectus. Ut finibus, felis et bibendum accumsan, dui sapien varius sapien, quis euismod elit erat eget nunc. Praesent mollis elit non euismod pretium. Nulla ac erat sem. Lorem volutpat.";
+        s2 = "Fusce ut justo mi. Pellentesque at posuere orci. Curabitur ac tempus odio, id mattis nibh. Nam a tortor vitae erat rhoncus porta. Ut dictum sodales purus sit amet volutpat. Maecenas id augue sit amet nisi rutrum pellentesque. Phasellus facilisis lobortis dolor, nec luctus leo congue eu. Sed gravida orci in metus luctus, id aliquam neque dictum. Quisque ut viverra elit. Etiam in nulla erat. Donec ante risus, efficitur sit amet arcu ac, ultrices semper orci. Nunc euismod, tortor et lobortis scelerisque, arcu est pretium massa, mattis tincidunt neque risus vel nibh. Sed fringilla ipsum mauris, nec euismod orci lobortis a. Vestibulum mi eros, aliquet ut urna ac, tincidunt suscipit orci. Cras a justo augue.\n" + 
+        		"\n" + 
+        		"Phasellus tincidunt facilisis malesuada. Suspendisse tincidunt, massa non venenatis condimentum, neque libero porta orci, vel facilisis ante nisl non dui. Proin et justo non arcu tincidunt sodales. Vestibulum sit amet ante tellus. Vestibulum consequat sit amet nisi id finibus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nullam ac ipsum condimentum, iaculis neque ac, scelerisque risus. Pellentesque elementum tellus diam, non vulputate magna fringilla quis. In euismod, nunc in auctor rutrum, neque augue fringilla massa, ut blandit turpis diam vitae odio. Nulla rutrum eros quis augue mollis, quis vehicula mi volutpat. Fusce tincidunt scelerisque venenatis. Donec facilisis consequat lorem ultrices tristique. Praesent quis elit aliquam urna mollis tincidunt.\n" + 
+        		"\n" + 
+        		"Aenean ornare eleifend magna, ut aliquet elit tempus eget. Sed quis odio pulvinar, commodo enim et, pellentesque ex. Sed tempus turpis felis, a molestie mi aliquet id. Nam non mollis risus. Mauris vitae erat mi. Vestibulum id felis quam. Pellentesque ornare lacus massa, sed auctor elit sagittis vel.\n" + 
+        		"\n" + 
+        		"Nulla dui ipsum, iaculis euismod blandit in, aliquet nec quam. Etiam faucibus dapibus justo, id luctus leo efficitur in. Cras vehicula egestas magna, non ultricies risus faucibus ut. Donec ut viverra enim, in commodo odio. Quisque laoreet nec felis ut ornare. Morbi a sapien ullamcorper, volutpat tortor vitae, gravida felis. Duis sapien odio, sollicitudin et diam id, feugiat congue quam. Aenean et nunc nisi.\n" + 
+        		"\n" + 
+        		"Maecenas sed nulla ac enim ullamcorper auctor eu in est. Etiam malesuada eleifend venenatis. Cras vulputate mi sed felis mattis pretium. Proin feugiat ex ligula, quis bibendum sem dignissim sit amet. Nullam vulputate, urna quis ullamcorper tincidunt, diam nunc sollicitudin nibh, id iaculis eros nulla nec dolor. Aliquam at pharetra eros. Praesent eu maximus libero. Maecenas lobortis lectus non dolor laoreet blandit. Vestibulum placerat finibus purus, et bibendum diam porttitor sed. Donec semper luctus facilisis. Quisque mi ex, egestas sit amet urna porta, vulputate aliquet orci. Pellentesque ut facilisis libero, et porta ipsum.\n" + 
+        		"\n" + 
+        		"Nam malesuada arcu justo, id efficitur sapien molestie nec. Aliquam eleifend quam et iaculis faucibus. Phasellus enim dui, tempor quis pretium et, tristique vel orci. Donec quis augue eget quam aliquet viverra. Fusce vehicula est elit, sit amet consectetur lectus suscipit a. Nam at risus non dolor finibus fermentum non non dolor. Donec a lorem ut dui commodo congue. Nulla dui tellus, mollis ac luctus at, volutpat suscipit tellus. Fusce a ornare risus, at mollis purus.\n" + 
+        		"\n" + 
+        		"Integer mi nunc, gravida non lorem congue, consectetur vulputate enim. Phasellus imperdiet lacinia sapien, eu porta urna venenatis eu. Quisque vel lorem cursus leo blandit malesuada. Cras eget urna rhoncus, fringilla ante in, sagittis metus. Sed sed iaculis nulla. Maecenas in nisl non orci maximus consectetur vel quis nunc. Morbi imperdiet nibh quis nunc lobortis, finibus dictum lacus tempus. Maecenas fermentum, est nec interdum rutrum, elit elit placerat urna, eget laoreet turpis metus vitae nunc. Proin rutrum mollis blandit.\n" + 
+        		"\n" + 
+        		"Nunc facilisis sem ipsum, quis bibendum velit dapibus id. Sed lacinia, dui ut faucibus imperdiet, lectus metus consequat mauris, id fringilla est tellus sit amet enim. Cras vehicula aliquet pretium. Cras tristique magna in lectus consectetur, eu posuere diam imperdiet. Aenean at ante ut turpis fermentum mollis. Sed finibus pellentesque tortor, at gravida felis placerat eu. Integer ultrices elementum iaculis. Mauris malesuada diam leo, id malesuada arcu bibendum quis. Vivamus aliquam vel massa sit amet sodales.\n" + 
+        		"\n" + 
+        		"Pellentesque accumsan ipsum id fermentum tempus. Donec tempus ipsum tortor, ut malesuada purus vulputate ac. Donec suscipit fringilla velit sed faucibus. Cras suscipit ipsum nibh, in imperdiet eros laoreet at. Aliquam lobortis elementum fermentum. Integer non lacus laoreet, accumsan velit sit amet, ultricies nisl. Integer et bibendum leo, sit amet malesuada diam. Phasellus non erat a est sollicitudin porttitor. Phasellus ultrices ligula vitae leo mattis lobortis. Fusce in mi tincidunt, porta purus vel, accumsan dolor.\n" + 
+        		"\n" + 
+        		"Nullam porttitor purus sit amet tortor elementum malesuada. Etiam ac magna sollicitudin, finibus augue in, mollis ex. Praesent semper dolor ac nibh tempor efficitur. Integer id lectus lobortis erat cursus posuere in sed libero. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec volutpat nunc sit amet venenatis aliquet. Ut nibh tortor, auctor nec tincidunt sit amet, fringilla vel risus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Suspendisse pretium rutrum orci.\n" + 
+        		"\n" + 
+        		"Cras et porttitor ligula. In tempor non magna id finibus. Aenean orci diam, tempus sed lorem ut, imperdiet accumsan risus. Aliquam sit amet vulputate erat, in volutpat metus. Vestibulum a faucibus magna. Fusce vulputate vehicula odio vel sodales. Maecenas convallis ex fermentum mi euismod scelerisque. Donec eu tempor libero, vitae bibendum turpis. Morbi id tristique mi. Integer bibendum leo ut fringilla bibendum. Nulla facilisi. Donec gravida risus in pharetra gravida. Aliquam ligula ligula, feugiat et euismod vel, malesuada in purus. Integer quis dui eget lectus ullamcorper fringilla et et augue. Nullam sem purus, sodales et feugiat et, pellentesque dignissim sapien. Nunc cursus suscipit urna vitae eleifend.\n" + 
+        		"\n" + 
+        		"Etiam pellentesque sed ante interdum interdum. Nulla dictum, orci vitae malesuada iaculis, metus felis rhoncus quam, id facilisis metus ipsum ut eros. Sed a eleifend purus. Nunc eget ultricies libero, nec euismod eros. Praesent libero neque, pulvinar in leo id, porttitor imperdiet dolor. Suspendisse urna tortor, fermentum sit amet eleifend vitae, viverra non justo. Praesent mauris leo, aliquam quis lacinia at, sagittis eget velit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed est erat, molestie eget libero vitae, vestibulum placerat tellus. Aliquam pretium venenatis pharetra. Morbi leo metus, imperdiet a semper luctus, ultrices ut risus.\n" + 
+        		"\n" + 
+        		"Maecenas malesuada, purus id finibus auctor, risus tortor mollis orci, eget viverra leo est sit amet est. Nullam eu lacinia diam, a dignissim massa. Vivamus nec ipsum quis nulla molestie pellentesque sit amet non leo. Duis gravida non dui efficitur volutpat. Sed id ornare ex. Sed laoreet pharetra lorem, id euismod nisi. Donec eu odio ullamcorper, tempus libero vel, aliquet justo. Proin luctus, urna in faucibus scelerisque, diam nunc facilisis enim, sed sollicitudin nisl eros at nulla. Sed lobortis tortor vitae tortor tristique varius. Pellentesque tempus eros id dui varius, eu aliquet quam ultricies.\n" + 
+        		"\n" + 
+        		"Morbi lacinia mauris nec lectus lacinia, placerat tempus diam efficitur. Ut vitae augue quis massa porta egestas. Etiam a ullamcorper lacus. Curabitur blandit sodales porta. Aenean commodo ex convallis neque porttitor posuere. Pellentesque dictum suscipit elit a accumsan. Nam tincidunt mauris fringilla tellus pulvinar, et mollis ex imperdiet. Aliquam iaculis tincidunt risus, volutpat efficitur massa facilisis nec.\n" + 
+        		"\n" + 
+        		"Phasellus eleifend, sapien id finibus fringilla, orci leo fringilla dolor, id scelerisque leo est eget eros. Nulla a lorem leo. Curabitur interdum rhoncus interdum. Suspendisse tempus sed nisi vitae vehicula. Nullam fringilla nulla et enim auctor efficitur. Suspendisse ac consequat sem. Integer id sagittis sapien. Sed suscipit ut ipsum non tincidunt. Integer non placerat neque.\n" + 
+        		"\n" + 
+        		"Nulla sodales orci id diam scelerisque, nec efficitur arcu tempus. Aliquam tempor blandit felis, ut ullamcorper mauris semper vel. Suspendisse potenti. In mattis rutrum vestibulum. Aenean at justo sit amet quam hendrerit efficitur. Morbi tincidunt nunc sit amet mi ullamcorper pharetra. Donec vel lectus malesuada, ultricies nibh non, dignissim velit. Nulla pharetra ante quis commodo porta. Proin sit amet condimentum diam. Nullam sed finibus eros, non rutrum enim. Nam convallis id lorem non porta. Etiam laoreet aliquet felis. Nulla sed vehicula turpis, eget vulputate ex. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Praesent eget ipsum eget enim imperdiet malesuada eu vel sem. Nullam consequat condimentum libero, et pellentesque felis maximus et.\n" + 
+        		"\n" + 
+        		"Morbi tempor est vitae libero faucibus, vel sodales sem scelerisque. Vivamus vel congue tellus. Aliquam ac tempor nunc, sed feugiat urna. Aliquam sagittis rutrum dolor eget fermentum. Proin porta tincidunt lorem vel convallis. Cras venenatis, mi sit amet aliquet vulputate, dolor mauris suscipit tellus, a maximus risus massa sit amet justo. Vestibulum dictum diam augue, a ultrices nibh posuere quis. Praesent consequat est non enim dignissim rutrum. Maecenas ultrices tempor nisl. Interdum et malesuada fames ac ante ipsum primis in faucibus. Duis auctor vel augue ut commodo. Nulla facilisi. Vestibulum tincidunt magna id ex cursus placerat. Cras ante mauris, condimentum at fermentum ut, luctus vitae arcu.\n" + 
+        		"\n" + 
+        		"Duis et consequat erat, at accumsan nisi. Nulla eu dictum augue, non rhoncus risus. Cras velit odio, maximus ac tempus non, pretium id lacus. Duis quis eros sed nibh semper ornare. Praesent elit erat, facilisis ac scelerisque sed, elementum tristique leo. Sed augue amet.";
+        
         s1 = s1.replace(",", "");
         s2 = s2.replace(",", "");
-    	//testInit(s1.length(), s2.length(), c_i, c_d, c_r);
+    	
+        //testInit(s1.length(), s2.length(), c_i, c_d, c_r);
     	//testGetEditDistanceDP(c_i, c_d, c_r, s1, s2);
     	//testGetMinimalEditSequence(c_i, c_d, c_r, s1, s2);
     	testBIGEditDistance(c_i, c_d, c_r, s1, s2);
