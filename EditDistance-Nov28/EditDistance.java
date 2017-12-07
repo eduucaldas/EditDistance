@@ -17,54 +17,6 @@ public class EditDistance implements EditDistanceInterface {
     static final int JUMP = 4;
     
     int[][] direcFrom;//from which direction did it came in dist, this is unique
-    //int[][] direcTo;//this is not unique, itll be obtained from direct from
-    //Pair[][] prec;
-    //Pair[][] son;
-    //final static Pair undefPos = new Pair(UNDEF, UNDEF);
-    /*
-    static class Pair{
-    	public int i;
-    	public int j;
-    	
-    	public static void display(Pair[][] matrix) {
-	    	for (int i = 0; i < matrix.length; i++) {
-	    	    for (int j = 0; j < matrix[i].length; j++) {
-	    	        System.out.print(matrix[i][j] + " ");
-	    	    }
-	    	    System.out.println();
-	    	}
-    	}
-    	public Pair(int i, int j) {
-    		this.i = i;
-    		this.j = j;
-    	}
-    	
-    	public void set(int i, int j) {
-    		this.i = i;
-    		this.j = j;
-    	}
-    	public String toString() {
-    		return "(" + i + "," + j + ")";
-    	}
-    	
-    	public boolean equals(Object o) {
-    		Pair p = (Pair) o;
-    		return (p.i == this.i) && (p.j == this.j);
-    	}
-    	
-    	private static void testPair() {
-	    	Pair p = new Pair(1,2);
-	    	int MAX_VECTOR = 10;
-	    	Pair[] v = new Pair[MAX_VECTOR];
-	    	for(int i = 0; i < MAX_VECTOR; i++)
-	    		v[i] = new Pair(i, MAX_VECTOR - i);
-	    	v[0].set(0, 0);
-	    	System.out.println(p);
-	    	for(int i = 0; i < MAX_VECTOR; i++)
-	    		System.out.print(v[i] + " ");
-	    	System.out.println();
-	    }
-    }*/
     
     public EditDistance (int c_i, int c_d, int c_r) {
         this.c_i = c_i;
@@ -79,32 +31,20 @@ public class EditDistance implements EditDistanceInterface {
     	}
     	if(termR < termD) {
     		if(termR < termI) {
-    			//prec[i][j].set(i-1, j-1);
-    			//son[i-1][j-1].set(i, j);
-    			//direcTo[i-1][j-1] = DIAG;
     			direcFrom[i][j] = DIAG;
     			return termR;
     		}
     		else{
-    			//prec[i][j].set(i, j-1);
-    			//son[i][j-1].set(i, j);
-    			//direcTo[i][j-1] = RIGHT;
     			direcFrom[i][j] = RIGHT;
     			return termI;
     		}
     	}
     	else {
     		if(termD < termI) {
-    			//prec[i][j].set(i-1, j);
-    			//son[i-1][j].set(i, j);
-    			//direcTo[i-1][j] = DOWN;
     			direcFrom[i][j] = DOWN;
     			return termD;
     		}
     		else{
-    			//prec[i][j].set(i, j-1);
-    			//son[i][j-1].set(i, j);
-    			//direcTo[i][j-1] = RIGHT;
     			direcFrom[i][j] = RIGHT;
     			return termI;
     		}
@@ -112,7 +52,6 @@ public class EditDistance implements EditDistanceInterface {
     }//shouldn`t receive anything no i, j == 0
     
     public int[][] getEditDistanceDP(String s1, String s2) {
-        /* To be completed in Part 1. Remove line below. */
         int[][] dist = init(s1.length(), s2.length());
         for(int i = 1; i <= s1.length(); i++) {
         	for(int j = 1; j <= s2.length(); j++) {
@@ -154,8 +93,6 @@ public class EditDistance implements EditDistanceInterface {
         	}
         	else
         		System.out.println("error in Stack filling");
-        	//i = son[i][j].i;
-        	//j = son[i][j].j;
         }
         while(!direcTo.isEmpty()) {
         	int command = direcTo.pop();
@@ -229,39 +166,24 @@ public class EditDistance implements EditDistanceInterface {
     }
     
     private int[][] init(int m, int n){
-    	//prec = new Pair[m+1][n+1];
-    	//son = new Pair[m+1][n+1];
     	direcFrom = new int[m+1][n+1];
-    	//direcTo = new int[m+1][n+1];
     	int[][] dist = new int[m+1][n+1];
         for(int j = 1; j <= n; j++) {
         	for(int i = 1; i <= m; i++) {
             	dist[i][j] = UNDEF;
-            	//prec[i][j] = new Pair(UNDEF, UNDEF);
-            	//son[m-i][n-j] = new Pair(UNDEF, UNDEF);
-            	//direcTo[m-i][n-j] = UNDEF;
             	direcFrom[i][j] = UNDEF;
             }
         }
         for(int i = 1; i < n+1; i++) {
         	dist[0][i] = i*c_i;
-        	//prec[0][i] = new Pair(0, i-1);
-        	//son[m][i-1] = new Pair(m,i);
-        	//direcTo[m][i-1] = RIGHT;
         	direcFrom[0][i] = RIGHT;
         }
         for(int i = 1; i < m+1; i++) {
         	dist[i][0] = i*c_d;
-        	//prec[i][0] = new Pair(i-1,0);
-        	//son[i-1][n] = new Pair(i,n);
-        	//direcTo[i-1][n] = DOWN;
         	direcFrom[i][0] = DOWN;
         }
         dist[0][0] = 0;
-        //prec[0][0] = new Pair(UNDEF, UNDEF);
-        //son[m][n] = new Pair(UNDEF, UNDEF);
         direcFrom[0][0] = UNDEF;
-        //direcTo[m][n] = UNDEF;
         return dist;
     }
     
@@ -315,9 +237,6 @@ public class EditDistance implements EditDistanceInterface {
     	int[][] dist = eD.init(m,n);
     	display(dist);
     	System.out.println("direcTo: ");
-    	//display(eD.direcTo);
-    	//display(eD.prec);
-    	//display(eD.son);
     }
     
     private static void testGetEditDistanceDP(int c_i, int c_d, int c_r, String s1, String s2) {
@@ -326,8 +245,6 @@ public class EditDistance implements EditDistanceInterface {
     	EditDistance eD = new EditDistance(c_i, c_d, c_r);
     	int[][] dist = eD.getEditDistanceDP(s1, s2);
     	display(dist);
-    	//display(eD.direcTo);
-    	//display(eD.prec);
     }
     
     private static void testGetMinimalEditSequence(int c_i, int c_d, int c_r, String s1, String s2) {
@@ -352,8 +269,6 @@ public class EditDistance implements EditDistanceInterface {
     	System.out.println("Cost = "+dist[s1.length()][s2.length()]);
     	System.out.println("Minimal edits from "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + "):");
     	display(ls);
-    	//System.out.println("direcTo:");
-    	//display(eD.direcTo);
     	boolean validSequence = Main.preValidateSequence(ls, s1, s2);
     	boolean optimalSequence = isOptimalSequence(ls, dist[s1.length()][s2.length()], eD.c_i, eD.c_d, eD.c_r);
     	System.out.println("Is it a valid Sequence ? " + validSequence);
@@ -373,11 +288,6 @@ public class EditDistance implements EditDistanceInterface {
     	tictoc = (System.nanoTime()-start)/1000000 - tictoc;
     	System.out.println("This test had m = " + s1.length() + ", n = " + s2.length() + "\n Second part took " + tictoc + " milliseconds");
     	
-    	//System.out.println("Transforming "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + ")");
-    	//display(dist);
-    	//System.out.println("Cost = "+dist[s1.length()][s2.length()]);
-    	//System.out.println("Minimal edits from "+s1+" to "+s2+" with (c_i,c_d,c_r) = (" + c_i + "," + c_d + "," + c_r + "):");
-    	//display(ls);
     	
     	boolean isValidSequence = Main.preValidateSequence(ls, s1, s2);
     	boolean isOptimalSequence = isOptimalSequence(ls, dist[s1.length()][s2.length()], eD.c_i, eD.c_d, eD.c_r);
