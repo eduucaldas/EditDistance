@@ -5,10 +5,12 @@ public class EditDistance implements EditDistanceInterface {
      
     int c_i, c_d, c_r;
     static int MAX = Integer.MAX_VALUE;
+    
     static final int UNDEF = -1;
     static final int RIGHT = 0;
     static final int DOWN = 1;
     static final int DIAG = 2;
+    
     static final int INSERT = 1;
     static final int DELETE = 2;
     static final int REPLACE = 3;
