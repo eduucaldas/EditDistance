@@ -81,7 +81,7 @@ class Main {
             System.err.println("Reached:   "+s);
             return false;
         }
-        System.out.println("Edit Sequence OK. Note that the cost of the Edit Sequence is not being preValidateSequenced (!)");
+        //System.out.println("Edit Sequence OK. Note that the cost of the Edit Sequence is not being preValidateSequenced (!)");
         return true;
     }
 
